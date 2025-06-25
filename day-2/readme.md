@@ -94,9 +94,31 @@ eksctl create nodegroup --cluster=observability \
                         --alb-ingress-access \
                         --node-private-networking
 
+
+
+
 # Update ./kube/config file
 aws eks update-kubeconfig --name observability
 ```
+
+# Node groups in public subnets
+
+              eksctl create nodegroup --cluster=observability \
+    --region=ap-south-1 \
+    --name=observability-ng-public \
+    --node-type=t3.medium \
+    --nodes-min=2 \
+    --nodes-max=3 \
+    --node-volume-size=20 \
+    --managed \
+    --ssh-access \
+    --ssh-public-key my-ec2-keypair \
+    --asg-access \
+    --external-dns-access \
+    --full-ecr-access \
+    --appmesh-access \
+    --alb-ingress-access
+
 
 ### 🧰 Step 2: Install kube-prometheus-stack
 ```bash
@@ -121,21 +143,37 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 kubectl get all -n monitoring
 ```
 - **Prometheus UI**:
+
+  # Step 1: Forward from cluster pod port 9090 → local port 8085
+  
 ```bash
-kubectl port-forward service/prometheus-operated -n monitoring 9090:9090
+kubectl port-forward service/prometheus-operated -n monitoring 8085:9090
+
 ```
+# Step 2: Expose localhost:9090 using socat
+    sudo socat TCP-LISTEN:9090,fork TCP:localhost:8085
+
 
 **NOTE:** If you are using an EC2 Instance or Cloud VM, you need to pass `--address 0.0.0.0` to the above command. Then you can access the UI on <instance-ip:port>
+# Note: access http://<ec2 ip>:9090
 
 - **Grafana UI**: password is `prom-operator`
 ```bash
-kubectl port-forward service/monitoring-grafana -n monitoring 8080:80
+kubectl port-forward svc/monitoring-grafana -n monitoring 8086:80
+
+sudo socat TCP-LISTEN:3000,fork TCP:localhost:8086
+
 ```
+# Note: access http://<ec2 ip>:3000
+
 - **Alertmanager UI**:
 ```bash
-kubectl port-forward service/alertmanager-operated -n monitoring 9093:9093
-```
+kubectl port-forward svc/alertmanager-operated -n monitoring 8087:9093
 
+sudo socat TCP-LISTEN:9093,fork TCP:localhost:8087
+
+```
+# Note: access http://<ec2 ip>:9093
 ### 🧼 Step 5: Clean UP
 - **Uninstall helm chart**:
 ```bash
