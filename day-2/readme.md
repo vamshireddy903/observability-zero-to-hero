@@ -151,11 +151,12 @@ kubectl port-forward service/prometheus-operated -n monitoring 8085:9090
 
 ```
 # Step 2: Expose localhost:9090 using socat
-    sudo socat TCP-LISTEN:9090,fork TCP:localhost:8085
+    sudo socat TCP-LISTEN:9091,fork TCP:localhost:8085
 
 
 **NOTE:** If you are using an EC2 Instance or Cloud VM, you need to pass `--address 0.0.0.0` to the above command. Then you can access the UI on <instance-ip:port>
-# Note: access http://<ec2 ip>:9090
+
+ Note: access http://<ec2 ip>:9091
 
 - **Grafana UI**: password is `prom-operator`
 ```bash
